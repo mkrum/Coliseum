@@ -1,6 +1,7 @@
 
 import numpy as np
 from framework import Environment
+import time
 
 class Spot(Environment):
     
@@ -35,3 +36,12 @@ class Spot(Environment):
 
     def get_name(self):
         return 'Spot' 
+
+    def play(self, model):
+        while True:
+            time.sleep(1)
+            state = self.get_state()
+            print(state)
+            action = model.respond(state)
+            print(action)
+            self.reset()

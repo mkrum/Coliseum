@@ -134,7 +134,7 @@ def clean_exit(signal, frame):
         save = input('\nSave Model? y/n: ')
 
     if save is 'y':
-        model.save_timestamp()
+        model.save_timestamp(env_name)
 
     plot = ''
     while not (plot is 'y' or plot is 'n'):

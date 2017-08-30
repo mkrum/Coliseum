@@ -71,8 +71,3 @@ class DQN(Model):
     def get_name(self):
         return 'DQN'
 
-    def save_path(self, path):
-        self.saver.save(self.sess, path)
-
-
-
