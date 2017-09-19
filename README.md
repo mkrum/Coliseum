@@ -16,14 +16,20 @@ python train.py dqn tictactoe
 ```
 
 ### train.py
-Trains a model on a environment. Many of the variables describing this process can be easily viewed and edited from the settings.py file. Control-C will safely end all the running threads, and will give you the option to both save the model and display a plot of its performance. 
+Trains a model on a environment. Many of the variables describing this process can be easily viewed and edited from the settings.py file. Control-C will safely end all the running threads, and will give you the option to both save the model and display a plot of its performance. It currently only uses randomized memory replay for training.
 
 ### play.py
 Environment specific way to test the performance of the model. Allows you to watch the model interact with the environment.
 
 ## Models
+All models have been verified to work on the spot environment. 
+
+### QL
+Q-Learning algorithm. Read more about it [here](https://en.wikipedia.org/wiki/Q-learning). Simple model-free reinforcement learning algorithm. As the name suggests, it's core formula is the base for the deep q-learning methods.
+
 ### DQN
 Simple Deep Q-Learning Network. Read more about the general structure [here](https://storage.googleapis.com/deepmind-media/dqn/DQNNaturePaper.pdf). Consider this the baseline/bare minimum in terms of modern deep reinforcement models.
+
 
 ## Environments
 ### Spot
