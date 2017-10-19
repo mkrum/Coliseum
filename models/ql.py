@@ -9,16 +9,15 @@ import operator
 #Standard Q learning
 class QL(Model):
 
-    def __init__(self, state_dim, action_space):
-        self.state_dim = state_dim
-        self.action_space = action_space
+    #no model necessary
+    def build_model(self):
         self.Q = {}
         self.lr = .0001
 
     def respond(self, state, epsilon=0.0):
         actions = self.get_actions(state)
 
-        action = max(actions.iteritems(), key=operator.itemgetter(1))[0]
+        action = max(actions.items(), key=operator.itemgetter(1))[0]
         if np.random.rand() < epsilon:
             action =  np.random.randint(self.action_space)
 

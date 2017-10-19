@@ -7,17 +7,10 @@ from framework import Model
 
 class DQN(Model):
 
-    def __init__(self, state_dim, action_space):
-
-        self.action_space = action_space
-        
-        self.state = tf.placeholder(tf.float32, [None] + state_dim + [1])
-        self.action = tf.placeholder(tf.float32, [None, action_space])
-        self.reward = tf.placeholder(tf.float32, [None, 1])
-        
-        features = [32, 64, 128]
-        fcneurons = [512, action_space]
-        kernellen = 3
+    def build_model(self):
+        features = [64, 128, 256]
+        fcneurons = [1024, self.action_space]
+        kernellen = 2
 
         conv1 = tf.layers.conv2d(
             inputs=self.state,
@@ -40,7 +33,7 @@ class DQN(Model):
             padding="same",
             activation=tf.nn.relu)
 
-        conv3_flat = tf.reshape(conv3, [-1, state_dim[0] * state_dim[1] * features[-1]])
+        conv3_flat = tf.reshape(conv3, [-1, self.state_dim[0] * self.state_dim[1] * features[-1]])
 
         fc1 = tf.layers.dense(inputs=conv3_flat, units=fcneurons[0], activation=tf.nn.tanh)
         self.qvals = tf.layers.dense(inputs=fc1, units=fcneurons[1], activation=tf.nn.tanh)

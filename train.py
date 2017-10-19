@@ -3,7 +3,7 @@ Memory Replay training
 One thread generates observations, the other thread constantally trains and evaluates.
 '''
 
-import numpy as np
+import numpy as np 
 import sys
 import threading
 import time
@@ -12,27 +12,78 @@ import matplotlib.pyplot as plt
 import os
 import signal
 
+import utils as ut
 import envs
 import models
 import settings
 
-from memory import MemoryReplay
+from training.memory import MemoryReplay
 
+#define global variables for threading
+memory = None
+env = None
+model = None
+test_env = None
 
-#setup model and env
-model_name = sys.argv[1]
-env_name = sys.argv[2]
+def memory_replay(in_model, in_env, memory_size=settings.MEMORY_SIZE):
+    model, env = ut.train_setup(in_model, in_env)
+    test_env = copy.copy(env)
+    state_dim, action_space = env.get_parameters()
 
-env = envs.make_env(env_name)
-test_env = envs.make_env(env_name)
+    memory = MemoryReplay(state_dim, action_space, memory_size)
 
-state_dim, action_space = env.get_parameters()
-model = models.make_model(model_name, state_dim, action_space)
+    state_buffer = []
+    action_buffer = []
+    reward_buffer = []
 
-os.system('clear')
-print('Start Training')
+    epsilon = 1.0
+    games = 0.0
+    epochs = 0 
+    avg_rewards = []
 
-memory = MemoryReplay(state_dim, action_space, settings.MEMORY_SIZE)
+    while True:
+        state = env.get_state()
+        state_buffer.append(copy.copy(state))
+
+        action = model.respond(state, epsilon)
+        reward, reset = env.step(action) 
+        action_buffer.append([copy.copy(action)])
+        reward_buffer.append([copy.copy(reward)])
+
+        if reset:
+            if epsilon > .1:
+                epsilon -= settings.EPSILON_DECAY 
+            games += 1.0
+
+            actions = np.asarray(action_buffer)
+            states = np.asarray(state_buffer)
+            rewards = np.asarray(reward_buffer)
+
+            memory.add(states, actions, rewards)
+
+            state_buffer = []
+            action_buffer = []
+            reward_buffer = []
+
+            if games % (settings.N_BATCHES * settings.BATCH_SIZE * 10) == 0 and games != 0:
+
+                    for _ in range(settings.N_BATCHES):
+                        states, actions, rewards = memory.get_sample(settings.BATCH_SIZE)
+                        model.train(states, actions, rewards)
+
+                    epochs += 1
+                    if epochs % settings.TEST_FREQUENCY == 0.0:
+
+                        rewards = 0.0
+                        for _ in range(settings.TEST_SAMPLES):
+                            state = test_env.get_state()
+                            action = model.respond(state)
+                            reward, reset = test_env.step(action) 
+                            rewards += reward
+                
+                        avg_reward = rewards / float(settings.TEST_SAMPLES)
+                        print('Epochs: {}, Average Reward: {}'.format(epochs, avg_reward))
+                        avg_rewards.append(avg_reward)
 
 class PopulateThread(threading.Thread):
 
@@ -111,14 +162,6 @@ class TrainingThread(threading.Thread):
                     print('Epochs: {}, Average Reward: {}'.format(epochs, avg_reward))
                     self.avg_rewards.append(avg_reward)
 
-
-
-populate = PopulateThread("populate")
-train = TrainingThread("training")
-
-populate.start()
-train.start()
-
 def clean_exit(signal, frame):
     global model
 
@@ -147,7 +190,24 @@ def clean_exit(signal, frame):
         plt.title('{} on {}'.format(model.get_name(), env.get_name()))
         plt.show()
 
+def memory_replay_threaded(in_model, in_env, memory_size=settings.MEMORY_SIZE):
+    global memory
+    global env
+    global model
+    global test_env
+    global populate
+    global train
 
-signal.signal(signal.SIGINT, clean_exit)
+    model, env = ut.train_setup(in_model, in_env)
+    test_env = copy.copy(env)
+    state_dim, action_space = env.get_parameters()
 
+    memory = MemoryReplay(state_dim, action_space, memory_size)
+
+    populate = PopulateThread("populate")
+    train = TrainingThread("training")
+
+    populate.start()
+    train.start()
+    signal.signal(signal.SIGINT, clean_exit)
 
